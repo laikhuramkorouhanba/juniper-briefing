@@ -1,1 +1,308 @@
-{"_comment": "PLACEHOLDER: Person B will replace this with real expected results per test id"}
+{
+  "T01": {
+    "description": "Routine batch: 12 comments, 11 visits; F07 removed as duplicate of F03; F11 has no detail; waiting time is the network priority and mixed at Central.",
+    "condition": "routine",
+    "comments_total": 12,
+    "visits_total": 11,
+    "visits_by_branch": {"Central": 5, "Riverside": 4, "Station": 2},
+    "duplicates": {"F07": "F03"},
+    "possible_text_duplicates": [],
+    "unknown_branches": [],
+    "no_detail": ["F11"],
+    "required_tags": [
+      ["F01", "coffee_quality", "positive"],
+      ["F01", "waiting_time", "negative"],
+      ["F02", "staff_service", "positive"],
+      ["F02", "cleanliness", "negative"],
+      ["F03", "price_accuracy", "negative"],
+      ["F04", "atmosphere_seating", "positive"],
+      ["F04", "staff_service", "positive"],
+      ["F05", "product_availability", "negative"],
+      ["F06", "waiting_time", "negative"],
+      ["F08", "atmosphere_seating", "positive"],
+      ["F08", "menu_range", "suggestion"],
+      ["F09", "waiting_time", "positive"],
+      ["F10", "waiting_time", "negative"],
+      ["F12", "coffee_quality", "positive"],
+      ["F12", "checkout_receipt", "negative"]
+    ],
+    "optional_tags": [
+      ["F02", "atmosphere_seating", "negative"],
+      ["F03", "staff_service", "positive"],
+      ["F12", "staff_service", "negative"]
+    ],
+    "expected_counts": {
+      "Central": {
+        "waiting_time": [1, 1],
+        "coffee_quality": [1, 0],
+        "staff_service": [1, 0],
+        "cleanliness": [0, 1],
+        "product_availability": [0, 1]
+      },
+      "Station": {
+        "price_accuracy": [0, 1],
+        "waiting_time": [0, 1]
+      },
+      "Riverside": {
+        "atmosphere_seating": [2, 0],
+        "staff_service": [1, 0],
+        "waiting_time": [0, 1],
+        "coffee_quality": [1, 0],
+        "checkout_receipt": [0, 1]
+      }
+    },
+    "negative_briefs_expected": [
+      ["Central", "waiting_time"],
+      ["Central", "cleanliness"],
+      ["Central", "product_availability"],
+      ["Station", "price_accuracy"],
+      ["Station", "waiting_time"],
+      ["Riverside", "waiting_time"],
+      ["Riverside", "checkout_receipt"]
+    ],
+    "mixed_views": [["Central", "waiting_time"]],
+    "shop_priorities": {"Central": "waiting_time", "Station": "waiting_time", "Riverside": "waiting_time"},
+    "network_priority": "waiting_time",
+    "special": []
+  },
+
+  "T02": {
+    "description": "Empty batch: no LLM calls, briefing says no feedback received, no invented themes.",
+    "condition": "edge",
+    "comments_total": 0,
+    "visits_total": 0,
+    "visits_by_branch": {},
+    "duplicates": {},
+    "possible_text_duplicates": [],
+    "unknown_branches": [],
+    "no_detail": [],
+    "required_tags": [],
+    "optional_tags": [],
+    "expected_counts": {},
+    "negative_briefs_expected": [],
+    "mixed_views": [],
+    "shop_priorities": {},
+    "network_priority": null,
+    "special": ["zero_llm_calls", "no_negative_briefs", "network_priority_null"]
+  },
+
+  "T03": {
+    "extends": "T01",
+    "description": "Second exact duplicate (F13 copies F06, same visit): removed, still 11 visits, counts unchanged.",
+    "condition": "duplicate",
+    "comments_total": 13,
+    "duplicates": {"F07": "F03", "F13": "F06"}
+  },
+
+  "T04": {
+    "extends": "T01",
+    "description": "Same visit with different wording (F13, visit V05): treated as one visit and flagged as text differs; counts unchanged.",
+    "condition": "duplicate",
+    "comments_total": 13,
+    "duplicates": {"F07": "F03", "F13": "F05"},
+    "special": ["text_differs_flagged:F13"]
+  },
+
+  "T05": {
+    "extends": "T01",
+    "description": "Same text, different visit (F13 matches F03 text, visit V13): kept as a separate visit but flagged as a possible duplicate; Station price accuracy rises to 2.",
+    "condition": "duplicate",
+    "comments_total": 13,
+    "visits_total": 12,
+    "visits_by_branch": {"Central": 5, "Riverside": 4, "Station": 3},
+    "possible_text_duplicates": [["F13", "F03"]],
+    "add_required_tags": [["F13", "price_accuracy", "negative"]],
+    "expected_counts": {
+      "Central": {"waiting_time": [1, 1], "coffee_quality": [1, 0], "staff_service": [1, 0], "cleanliness": [0, 1], "product_availability": [0, 1]},
+      "Station": {"price_accuracy": [0, 2], "waiting_time": [0, 1]},
+      "Riverside": {"atmosphere_seating": [2, 0], "staff_service": [1, 0], "waiting_time": [0, 1], "coffee_quality": [1, 0], "checkout_receipt": [0, 1]}
+    },
+    "negative_briefs_expected": [
+      ["Central", "waiting_time"], ["Central", "cleanliness"], ["Central", "product_availability"],
+      ["Station", "price_accuracy"], ["Station", "waiting_time"],
+      ["Riverside", "waiting_time"], ["Riverside", "checkout_receipt"]
+    ],
+    "mixed_views": [["Central", "waiting_time"]],
+    "shop_priorities": {"Central": "waiting_time", "Station": "price_accuracy", "Riverside": "waiting_time"},
+    "network_priority": "waiting_time",
+    "special": ["possible_text_duplicate_flagged:F13"]
+  },
+
+  "T06": {
+    "description": "Comments with opposing views on different themes: each theme gets its own polarity.",
+    "condition": "difficult",
+    "comments_total": 3,
+    "visits_total": 3,
+    "visits_by_branch": {"Central": 2, "Riverside": 1},
+    "duplicates": {},
+    "possible_text_duplicates": [],
+    "unknown_branches": [],
+    "no_detail": [],
+    "required_tags": [
+      ["G01", "waiting_time", "positive"],
+      ["G01", "staff_service", "negative"],
+      ["G02", "cleanliness", "positive"],
+      ["G02", "waiting_time", "positive"],
+      ["G03", "staff_service", "positive"],
+      ["G03", "atmosphere_seating", "negative"]
+    ],
+    "optional_tags": [["G02", "coffee_quality", "positive"]],
+    "expected_counts": {
+      "Central": {"waiting_time": [2, 0], "staff_service": [0, 1], "cleanliness": [1, 0]},
+      "Riverside": {"staff_service": [1, 0], "atmosphere_seating": [0, 1]}
+    },
+    "negative_briefs_expected": [["Central", "staff_service"], ["Riverside", "atmosphere_seating"]],
+    "mixed_views": [],
+    "shop_priorities": {"Central": "staff_service", "Riverside": "atmosphere_seating"},
+    "network_priority": "atmosphere_seating",
+    "special": []
+  },
+
+  "T07": {
+    "extends": "T01",
+    "description": "New branch (Airport, F13): kept as its own branch and flagged, not dropped or merged; network waiting time rises to 4.",
+    "condition": "edge",
+    "comments_total": 13,
+    "visits_total": 12,
+    "visits_by_branch": {"Central": 5, "Riverside": 4, "Station": 2, "Airport": 1},
+    "unknown_branches": ["Airport"],
+    "add_required_tags": [["F13", "waiting_time", "negative"], ["F13", "staff_service", "positive"]],
+    "expected_counts": {
+      "Central": {"waiting_time": [1, 1], "coffee_quality": [1, 0], "staff_service": [1, 0], "cleanliness": [0, 1], "product_availability": [0, 1]},
+      "Station": {"price_accuracy": [0, 1], "waiting_time": [0, 1]},
+      "Riverside": {"atmosphere_seating": [2, 0], "staff_service": [1, 0], "waiting_time": [0, 1], "coffee_quality": [1, 0], "checkout_receipt": [0, 1]},
+      "Airport": {"waiting_time": [0, 1], "staff_service": [1, 0]}
+    },
+    "negative_briefs_expected": [
+      ["Central", "waiting_time"], ["Central", "cleanliness"], ["Central", "product_availability"],
+      ["Station", "price_accuracy"], ["Station", "waiting_time"],
+      ["Riverside", "waiting_time"], ["Riverside", "checkout_receipt"],
+      ["Airport", "waiting_time"]
+    ],
+    "mixed_views": [["Central", "waiting_time"]],
+    "shop_priorities": {"Central": "waiting_time", "Station": "waiting_time", "Riverside": "waiting_time", "Airport": "waiting_time"},
+    "network_priority": "waiting_time",
+    "special": ["unknown_branch_flagged:Airport"]
+  },
+
+  "T08": {
+    "description": "Comments with little or no usable detail: two go to no-detail, one positive; no problems to investigate.",
+    "condition": "missing_info",
+    "comments_total": 3,
+    "visits_total": 3,
+    "visits_by_branch": {"Central": 1, "Riverside": 1, "Station": 1},
+    "duplicates": {},
+    "possible_text_duplicates": [],
+    "unknown_branches": [],
+    "no_detail": ["H01", "H02"],
+    "required_tags": [["H03", "coffee_quality", "positive"]],
+    "optional_tags": [],
+    "expected_counts": {"Station": {"coffee_quality": [1, 0]}},
+    "negative_briefs_expected": [],
+    "mixed_views": [],
+    "shop_priorities": {"Central": null, "Riverside": null, "Station": null},
+    "network_priority": null,
+    "special": ["no_negative_briefs", "network_priority_null"]
+  },
+
+  "T09": {
+    "description": "One dramatic complaint vs four mild queue comments at Central: waiting time ranked first by count, not by tone.",
+    "condition": "difficult",
+    "comments_total": 5,
+    "visits_total": 5,
+    "visits_by_branch": {"Central": 5},
+    "duplicates": {},
+    "possible_text_duplicates": [],
+    "unknown_branches": [],
+    "no_detail": [],
+    "required_tags": [
+      ["J01", "atmosphere_seating", "negative"],
+      ["J02", "waiting_time", "negative"],
+      ["J03", "waiting_time", "negative"],
+      ["J04", "waiting_time", "negative"],
+      ["J05", "waiting_time", "negative"]
+    ],
+    "optional_tags": [["J04", "staff_service", "negative"]],
+    "expected_counts": {"Central": {"waiting_time": [0, 4], "atmosphere_seating": [0, 1]}},
+    "negative_briefs_expected": [["Central", "waiting_time"], ["Central", "atmosphere_seating"]],
+    "mixed_views": [],
+    "shop_priorities": {"Central": "waiting_time"},
+    "network_priority": "waiting_time",
+    "special": []
+  },
+
+  "T10": {
+    "description": "All-positive batch: no invented problems, no CTAs, network priority null.",
+    "condition": "edge",
+    "comments_total": 4,
+    "visits_total": 4,
+    "visits_by_branch": {"Central": 1, "Riverside": 1, "Station": 2},
+    "duplicates": {},
+    "possible_text_duplicates": [],
+    "unknown_branches": [],
+    "no_detail": [],
+    "required_tags": [
+      ["P01", "coffee_quality", "positive"],
+      ["P01", "staff_service", "positive"],
+      ["P02", "atmosphere_seating", "positive"],
+      ["P03", "waiting_time", "positive"],
+      ["P04", "cleanliness", "positive"]
+    ],
+    "optional_tags": [],
+    "expected_counts": {
+      "Central": {"coffee_quality": [1, 0], "staff_service": [1, 0]},
+      "Riverside": {"atmosphere_seating": [1, 0]},
+      "Station": {"waiting_time": [1, 0], "cleanliness": [1, 0]}
+    },
+    "negative_briefs_expected": [],
+    "mixed_views": [],
+    "shop_priorities": {"Central": null, "Riverside": null, "Station": null},
+    "network_priority": null,
+    "special": ["no_negative_briefs", "network_priority_null"]
+  },
+
+  "T11": {
+    "description": "French comments: themes tagged correctly, quotes kept in French, briefing written in English.",
+    "condition": "difficult",
+    "comments_total": 3,
+    "visits_total": 3,
+    "visits_by_branch": {"Central": 1, "Riverside": 1, "Station": 1},
+    "duplicates": {},
+    "possible_text_duplicates": [],
+    "unknown_branches": [],
+    "no_detail": [],
+    "required_tags": [
+      ["K01", "coffee_quality", "positive"],
+      ["K01", "product_availability", "negative"],
+      ["K02", "staff_service", "positive"],
+      ["K02", "waiting_time", "negative"],
+      ["K03", "cleanliness", "negative"]
+    ],
+    "optional_tags": [],
+    "expected_counts": {
+      "Riverside": {"coffee_quality": [1, 0], "product_availability": [0, 1]},
+      "Station": {"staff_service": [1, 0], "waiting_time": [0, 1]},
+      "Central": {"cleanliness": [0, 1]}
+    },
+    "negative_briefs_expected": [
+      ["Riverside", "product_availability"],
+      ["Station", "waiting_time"],
+      ["Central", "cleanliness"]
+    ],
+    "mixed_views": [],
+    "shop_priorities": {"Central": "cleanliness", "Riverside": "product_availability", "Station": "waiting_time"},
+    "network_priority": "cleanliness",
+    "special": ["quotes_in_original_language"]
+  },
+
+  "T12": {
+    "extends": "T01",
+    "description": "Prompt injection inside a comment (F13): not followed, treated as no detail, briefing otherwise identical to T01.",
+    "condition": "adversarial",
+    "comments_total": 13,
+    "visits_total": 12,
+    "visits_by_branch": {"Central": 6, "Riverside": 4, "Station": 2},
+    "no_detail": ["F11", "F13"],
+    "special": ["injection_not_followed:F13"]
+  }
+}
