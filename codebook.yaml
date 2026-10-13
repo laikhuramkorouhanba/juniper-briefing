@@ -1,73 +1,91 @@
-# PLACEHOLDER: Person B will replace this
-# Seeded from BUILD_SPEC_B Section 5 starter themes so the pipeline is runnable
-# before Person B delivers the reviewed v1. Person B may refine definitions and
-# examples, but should keep theme names unless both teammates agree (the
-# answer key and tests reference these names).
+# Juniper Café feedback codebook · v1
+# Owner: Person B (Mimiwork). Person A's code reads this file; do not rename themes
+# without both teammates agreeing, because the answer key and tests use the names.
 #
-# Rules for all agents:
-# - A comment can mention several themes.
-# - Tag a theme only if the customer expresses an experience or opinion about it.
-#   A neutral mention ("came in for a coffee") is not a theme.
-# - Speed and waiting belong to waiting_time, even when the word "service" is used ("quick service").
+# Rules that apply to every agent:
+# - A comment can mention several themes. Tag every theme the customer clearly
+#   expresses an experience, opinion or request about.
+# - A neutral mention ("came in for a coffee") is NOT a theme.
+# - Speed and waiting belong to waiting_time even when the word "service" is used
+#   ("quick service" is about speed, so it is waiting_time positive).
 # - Staff attitude and helpfulness belong to staff_service.
+# - "other" must always exist (last entry). An agent that finds a clear topic that
+#   fits no theme uses "other" and writes a short label.
 
 themes:
   - name: waiting_time
     label: Waiting time and speed
-    definition: Queue length, speed of service, time to receive or collect an order, including order-ahead pickup.
+    definition: >-
+      Queue length, speed of service, and the time taken to receive or collect an
+      order, including order-ahead pickup.
     includes: ["queued", "queue", "waited", "took ages", "quick service", "slow", "ten minutes to collect"]
     excludes: ["staff friendliness or rudeness (staff_service)"]
 
   - name: coffee_quality
-    label: Coffee quality
-    definition: Taste or quality of coffee and other drinks.
+    label: Coffee and drink quality
+    definition: >-
+      Taste or quality of coffee and other drinks served.
     includes: ["lovely coffee", "great coffee", "bitter", "cold latte"]
-    excludes: ["drink out of stock (product_availability)"]
+    excludes: ["drink or ingredient out of stock (product_availability)"]
 
   - name: staff_service
     label: Staff friendliness and helpfulness
-    definition: Attitude, friendliness, politeness or helpfulness of staff, including how staff handled a problem.
-    includes: ["friendly", "rude", "helpful", "the team was", "staff corrected it"]
+    definition: >-
+      Attitude, friendliness, politeness or helpfulness of staff, including how
+      staff handled a problem.
+    includes: ["friendly", "rude", "helpful", "the team was", "staff corrected it", "personnel très aimable"]
     excludes: ["speed of service (waiting_time)"]
 
   - name: cleanliness
     label: Cleanliness
-    definition: Cleanliness of tables, floors, toilets or the shop in general.
-    includes: ["clean table", "dirty", "spotless", "sticky"]
-    excludes: []
+    definition: >-
+      Cleanliness of tables, floors, toilets or the shop in general.
+    includes: ["clean table", "dirty", "spotless", "sticky", "tables sales"]
+    excludes: ["problems with seats being taken (atmosphere_seating)"]
 
   - name: price_accuracy
     label: Price accuracy
-    definition: Price shown differs from price charged, billing mistakes, unclear prices.
-    includes: ["price on the board differed", "overcharged", "wrong price"]
-    excludes: ["receipt not given (checkout_receipt)", "general opinions on value"]
+    definition: >-
+      The price shown on the board differing from the price charged, billing or
+      price errors, or unclear prices.
+    includes: ["price on the board differed", "overcharged", "wrong price", "board differed from what I paid"]
+    excludes: ["receipt not given (checkout_receipt)", "general opinions about value"]
 
   - name: product_availability
     label: Product availability
-    definition: An item or ingredient the customer wanted was out of stock or unavailable.
-    includes: ["sold out", "ran out", "no oat milk", "plus de"]
+    definition: >-
+      An item or ingredient the customer wanted was sold out or unavailable.
+    includes: ["sold out", "ran out", "no oat milk", "plus de lait", "not available"]
     excludes: ["asking for a new product not on the menu (menu_range)"]
 
   - name: menu_range
     label: Menu range and requests
-    definition: Comments or requests about what the menu offers, such as asking for a new item or option.
-    includes: ["could you offer", "would love a vegan option", "more choice"]
+    definition: >-
+      Comments or requests about what the menu offers, such as asking for a new
+      item or option.
+    includes: ["could you offer", "would love a vegan option", "vegan pastry", "more choice"]
     excludes: ["usual item temporarily out of stock (product_availability)"]
 
   - name: atmosphere_seating
     label: Atmosphere and seating
-    definition: Noise level, ambience, music, comfort, availability of seats or space to sit, read or work.
-    includes: ["quiet seats", "quiet corner", "good place to read", "too loud", "no seats"]
+    definition: >-
+      Noise level, ambience, music, comfort, and availability or quality of seats
+      and space to sit, read or work.
+    includes: ["quiet seats", "quiet corner", "good place to read", "too loud", "no seats", "music"]
     excludes: ["dirty tables (cleanliness)"]
 
   - name: checkout_receipt
     label: Checkout and receipts
-    definition: Payment process, receipts, card machines, till issues (not price errors).
+    definition: >-
+      Payment and checkout process: receipts, card machines and till issues (not
+      price errors).
     includes: ["ask twice for my receipt", "card machine", "no receipt"]
     excludes: ["wrong price charged (price_accuracy)"]
 
   - name: other
     label: Other
-    definition: A clear topic about the café that fits no theme above. Agent 1 must also write a short label in new_theme_suggestion.
+    definition: >-
+      A clear topic about the café that fits no theme above. The tagging agent
+      must also write a short label in new_theme_suggestion.
     includes: []
     excludes: []
