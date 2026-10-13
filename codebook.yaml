@@ -1,8 +1,7 @@
-# PLACEHOLDER: Person B will replace this
-# Seeded from BUILD_SPEC_B Section 5 starter themes so the pipeline is runnable
-# before Person B delivers the reviewed v1. Person B may refine definitions and
-# examples, but should keep theme names unless both teammates agree (the
-# answer key and tests reference these names).
+# Seeded verbatim from BUILD_SPEC_B Section 5 (Person B's v1 draft) — matches
+# answer_key.json and the v1 prompts exactly. Person B owns this file; refine
+# definitions/examples freely, but changing a theme NAME means also updating
+# answer_key.json and every v1 prompt that references it.
 #
 # Rules for all agents:
 # - A comment can mention several themes.
