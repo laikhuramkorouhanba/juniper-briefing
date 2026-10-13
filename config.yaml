@@ -2,13 +2,11 @@ provider: gemini                # gemini | mock
                                  # gemini: free-tier Gemini Flash (needs GEMINI_API_KEY)
                                  # mock: no key, no network — reads fixtures/mock/
 
-models:
-  gemini:
-    agent1_tagger: gemini-3.5-flash
-    agent2_polarity: gemini-3.5-flash
-    agent4_brief: gemini-3.5-flash
-    agent5_editor: gemini-3.5-flash
-    baseline: gemini-3.5-flash  # baseline uses the same model as the pipeline, so the comparison is fair
+# Model names are NOT set here — they come from the environment (GEMINI_MODEL /
+# GEMINI_FALLBACK_MODEL in .env, or Streamlit secrets), defaulting to
+# gemini-3.1-flash-lite / gemini-3.5-flash. Same pair for every agent, including
+# the baseline, so the baseline-vs-pipeline comparison stays fair. See
+# juniper/config.py and docs/decisions.md.
 
 prompt_versions:                # bump to v2, v3... when iterating (B edits these)
   agent1_tagger: v1
@@ -27,8 +25,12 @@ llm:
     agent2_polarity: per_comment
 
 paid_price_per_mtok_eur:        # optional; shows what the same run would cost on a paid tier.
-                                 # null by default -> reported as "n/a (pricing not set)"
-  gemini-3.5-flash: {input: null, output: null}
+                                 # null by default -> reported as "n/a (pricing not set)".
+                                 # Keyed by whichever model name actually answered the call
+                                 # (logged per CallLog.model) — add a row if you set a non-default
+                                 # GEMINI_MODEL / GEMINI_FALLBACK_MODEL.
+  gemini-3.1-flash-lite: {input: null, output: null}
+  gemini-3.5-flash:      {input: null, output: null}
 
 known_branches: [Central, Riverside, Station]
 

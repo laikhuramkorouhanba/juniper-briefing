@@ -25,8 +25,15 @@ T = TypeVar("T", bound=BaseModel)
 
 FIXTURES_DIR = Path(__file__).resolve().parent.parent / "fixtures" / "mock"
 
-# Exponential backoff schedule for rate-limit / quota errors, per docs/contracts.md.
-_RATE_LIMIT_BACKOFF_S = (2, 4, 8)
+# Gaps between retries of the SAME model on a retryable error (429 rate-limit/quota,
+# 500/503/504 transient server errors — 504 DEADLINE_EXCEEDED was added after it
+# showed up live during testing; it's a timeout, the same family as 500/503): 3
+# attempts per model means 2 gaps. After these are exhausted on the primary model,
+# generate() switches to the fallback model and runs the same schedule there
+# before giving up.
+_RETRYABLE_CODES = (429, 500, 503, 504)
+_RETRY_BACKOFF_S = (2, 4)
+_REQUEST_TIMEOUT_MS = 60_000  # free-tier responses can be slow
 
 
 class ProviderUnavailable(RuntimeError):
@@ -50,10 +57,12 @@ class Adapter(Protocol):
     """What call_structured needs from a provider adapter. Tests inject a fake
     implementing just this — they never need a real network client."""
 
-    def generate(self, prompt: str, output_model: Type[BaseModel], model_name: str) -> tuple[str, int, int]:
-        """Return (raw_json_text, input_tokens, output_tokens). Raises
-        ProviderUnavailable on a rate-limit/quota error that survived the backoff
-        schedule, or any other exception on a non-retryable provider failure."""
+    def generate(self, prompt: str, output_model: Type[BaseModel]) -> tuple[str, int, int, str]:
+        """Return (raw_json_text, input_tokens, output_tokens, model_used) — the
+        adapter owns model selection (e.g. primary/fallback), so it reports back
+        which model actually answered. Raises ProviderUnavailable if every model
+        it tried is still failing after its backoff schedule, or any other
+        exception on a non-retryable provider failure."""
         ...
 
 
@@ -79,8 +88,21 @@ def _load_mock_fixture(test_id: str, agent_name: str, output_model: Type[T]) -> 
 # ---------------------------------------------------------------------------
 
 
+class _ModelExhausted(Exception):
+    """Internal control-flow signal: one model's retry budget ran out on a
+    retryable error. Never escapes GeminiAdapter.generate()."""
+
+
 class GeminiAdapter:
-    """google-genai SDK, structured output via response_schema=<pydantic class>."""
+    """google-genai SDK, structured output via response_schema=<pydantic class>.
+
+    Model names are never hardcoded: config.gemini_model (primary) and
+    config.gemini_fallback_model (fallback) come from the environment. A 429
+    (rate-limit/quota), 500 or 503 (transient server error) is retried with
+    exponential backoff up to 3 attempts on the current model; if it's still
+    failing, the next model in [primary, fallback] is tried the same way. Only
+    once both are exhausted does this raise ProviderUnavailable.
+    """
 
     def __init__(self, config: Config):
         api_key = config.gemini_api_key
@@ -89,10 +111,15 @@ class GeminiAdapter:
                 "GEMINI_API_KEY is not set (checked st.secrets, then .env / environment)"
             )
         from google import genai  # imported lazily: never required in mock-only use
+        from google.genai import types
 
-        self._client = genai.Client(api_key=api_key)
+        self._client = genai.Client(
+            api_key=api_key, http_options=types.HttpOptions(timeout=_REQUEST_TIMEOUT_MS)
+        )
         self._temperature = config.temperature
         self._max_tokens = config.max_tokens
+        self._primary_model = config.gemini_model
+        self._fallback_model = config.gemini_fallback_model
 
     def available(self) -> bool:
         """Cheap check for the Streamlit app's startup provider list: does a key
@@ -100,7 +127,22 @@ class GeminiAdapter:
         just to populate a UI toggle."""
         return True  # __init__ already raised ProviderUnavailable if there's no key
 
-    def generate(self, prompt: str, output_model: Type[BaseModel], model_name: str) -> tuple[str, int, int]:
+    def generate(self, prompt: str, output_model: Type[BaseModel]) -> tuple[str, int, int, str]:
+        last_exc: Optional[BaseException] = None
+        for model_name in (self._primary_model, self._fallback_model):
+            try:
+                text, input_tokens, output_tokens = self._call_model(prompt, output_model, model_name)
+                return text, input_tokens, output_tokens, model_name
+            except _ModelExhausted as exc:
+                last_exc = exc.__cause__ or exc
+                continue
+
+        raise ProviderUnavailable(
+            f"gemini unavailable on both {self._primary_model!r} and "
+            f"{self._fallback_model!r} after retrying each: {last_exc}"
+        ) from last_exc
+
+    def _call_model(self, prompt: str, output_model: Type[BaseModel], model_name: str) -> tuple[str, int, int]:
         from google.genai import errors, types
 
         def _config(use_schema: bool) -> "types.GenerateContentConfig":
@@ -120,10 +162,9 @@ class GeminiAdapter:
                 config=_config(use_schema),
             )
 
-        last_exc: Optional[BaseException] = None
-        attempt = 0
         use_schema = True
-        while True:
+        last_exc: Optional[BaseException] = None
+        for attempt in range(len(_RETRY_BACKOFF_S) + 1):  # 3 attempts: 2 backoff gaps
             try:
                 response = _call(use_schema)
                 text = response.text or ""
@@ -132,23 +173,22 @@ class GeminiAdapter:
                 output_tokens = int(getattr(usage, "candidates_token_count", 0) or 0)
                 return text, input_tokens, output_tokens
             except errors.APIError as exc:
-                if exc.code == 429:
-                    if attempt >= len(_RATE_LIMIT_BACKOFF_S):
-                        raise ProviderUnavailable(
-                            f"gemini rate-limited / out of quota after backoff: {exc}"
-                        ) from exc
-                    time.sleep(_RATE_LIMIT_BACKOFF_S[attempt])
-                    attempt += 1
-                    last_exc = exc
-                    continue
+                last_exc = exc
                 if exc.code == 400 and use_schema:
                     # Schema rejected (e.g. an unusual Optional/nested shape) -> retry
-                    # once in plain JSON mode with the schema spelled out in the prompt.
+                    # in plain JSON mode with the schema spelled out in the prompt
+                    # instead. No backoff needed — it's a deterministic fix, not a
+                    # transient failure — but it does use one of the 3 attempt slots.
                     use_schema = False
-                    last_exc = exc
                     continue
-                raise
-        raise ProviderUnavailable(f"gemini request failed: {last_exc}")  # pragma: no cover
+                if exc.code in _RETRYABLE_CODES:
+                    if attempt < len(_RETRY_BACKOFF_S):
+                        time.sleep(_RETRY_BACKOFF_S[attempt])
+                        continue
+                    raise _ModelExhausted() from exc
+                raise  # non-retryable (e.g. a persistent 400) -> propagate immediately
+
+        raise _ModelExhausted() from last_exc  # pragma: no cover — loop always returns/raises above
 
 
 def _plain_json_prompt(prompt: str, output_model: Type[BaseModel]) -> str:
@@ -208,7 +248,6 @@ def call_structured(
     """
     config = config or get_config()
     provider = config.provider
-    model_name = config.model_for(agent_name, provider)
     prompt_version = config.prompt_version(agent_name)
 
     if provider == "mock":
@@ -220,7 +259,7 @@ def call_structured(
         return parsed, CallLog(
             agent=agent_name,
             provider="mock",
-            model=model_name,
+            model=config.gemini_model,  # label only: mock makes no real call
             prompt_version=prompt_version,
             latency_s=latency,
             input_tokens=0,
@@ -239,9 +278,10 @@ def call_structured(
 
     # attempt_index 0 is the first (non-retry) try; up to max_retries further
     # retries follow, so this runs at most max_retries + 1 times in total.
+    model_used = None
     for attempt_index in range(config.max_retries + 1):
-        raw_text, input_tokens, output_tokens = live_adapter.generate(
-            current_prompt, output_model, model_name
+        raw_text, input_tokens, output_tokens, model_used = live_adapter.generate(
+            current_prompt, output_model
         )
         try:
             data = json.loads(raw_text)
@@ -249,13 +289,13 @@ def call_structured(
             return parsed, CallLog(
                 agent=agent_name,
                 provider=provider,
-                model=model_name,
+                model=model_used,
                 prompt_version=prompt_version,
                 latency_s=time.monotonic() - start,
                 input_tokens=input_tokens,
                 output_tokens=output_tokens,
                 cost_eur=0.0,
-                cost_eur_if_paid_est=_paid_estimate(config, model_name, input_tokens, output_tokens),
+                cost_eur_if_paid_est=_paid_estimate(config, model_used, input_tokens, output_tokens),
                 retries=attempt_index,
                 ok=True,
             )
@@ -270,7 +310,7 @@ def call_structured(
     failed_log = CallLog(
         agent=agent_name,
         provider=provider,
-        model=model_name,
+        model=model_used,
         prompt_version=prompt_version,
         latency_s=time.monotonic() - start,
         input_tokens=0,

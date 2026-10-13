@@ -230,19 +230,23 @@ runs/*
 > model — Ollama was dropped: it can't run on the deployed app, so it isn't worth a
 > second code path for a sprint project). Pricing is reframed as an optional paid-tier
 > estimate, since Gemini free tier and mock both cost €0. See `docs/decisions.md`.
+>
+> **Amended again 2026-10-13:** no model names live in `config.yaml` or Python
+> anymore. `GEMINI_MODEL` / `GEMINI_FALLBACK_MODEL` (.env or Streamlit secrets,
+> same precedence as the API key) set one model pair for the whole pipeline,
+> defaulting to `gemini-3.1-flash-lite` / `gemini-3.5-flash`. On a 429/500/503/504
+> (confirmed live, see docs/decisions.md), `juniper/llm.py` retries the current
+> model 3 times with backoff, then switches to the fallback model and does the
+> same there before raising `ProviderUnavailable`. `CallLog.model` records
+> whichever model actually answered.
 
 ```yaml
 provider: gemini                # gemini | mock
                                  # gemini: free-tier Gemini Flash (needs GEMINI_API_KEY)
                                  # mock: no key, no network — reads fixtures/mock/
 
-models:
-  gemini:
-    agent1_tagger: gemini-3.5-flash
-    agent2_polarity: gemini-3.5-flash
-    agent4_brief: gemini-3.5-flash
-    agent5_editor: gemini-3.5-flash
-    baseline: gemini-3.5-flash  # baseline uses the same model as the pipeline, so the comparison is fair
+# Model names come from the environment (GEMINI_MODEL / GEMINI_FALLBACK_MODEL),
+# not from this file — same pair for every agent, including the baseline.
 
 prompt_versions:                # bump to v2, v3... when iterating (B edits these)
   agent1_tagger: v1
@@ -262,7 +266,8 @@ llm:
 
 paid_price_per_mtok_eur:        # optional; shows what the same run would cost on a paid tier.
                                  # null by default -> reported as "n/a (pricing not set)"
-  gemini-3.5-flash: {input: null, output: null}
+  gemini-3.1-flash-lite: {input: null, output: null}
+  gemini-3.5-flash:      {input: null, output: null}
 
 known_branches: [Central, Riverside, Station]
 
@@ -289,11 +294,17 @@ app:
 
 ```
 GEMINI_API_KEY=
+# Optional overrides — defaults are gemini-3.1-flash-lite (primary) and
+# gemini-3.5-flash (fallback, used after the primary fails 3 retries on a
+# 429/500/503/504). Same pair for every agent.
+GEMINI_MODEL=
+GEMINI_FALLBACK_MODEL=
 ```
 
-`juniper/config.py` reads `GEMINI_API_KEY` and an optional `PROVIDER` override from
-`st.secrets` when running under Streamlit and they exist there, otherwise from `.env` /
-environment variables. Never print or log the key.
+`juniper/config.py` reads `GEMINI_API_KEY`, `PROVIDER`, `GEMINI_MODEL` and
+`GEMINI_FALLBACK_MODEL` from `st.secrets` when running under Streamlit and they
+exist there, otherwise from `.env` / environment variables. Never print or log
+the key.
 
 ---
 
@@ -590,7 +601,11 @@ Commit: `Phase 1: foundation and preprocessing`
   `response_schema` set to the pydantic model class itself (the SDK converts it,
   including `Optional` and nested fields, without a hand-built JSON schema). If the
   API rejects the schema, fall back to plain JSON mode and append the JSON schema to
-  the prompt text instead.
+  the prompt text instead. A generous request timeout (60s) is set client-wide, since
+  free-tier responses can be slow.
+- **No model name is hardcoded.** `GEMINI_MODEL` (primary) and `GEMINI_FALLBACK_MODEL`
+  (fallback) come from `.env` / `st.secrets`, defaulting to `gemini-3.1-flash-lite`
+  and `gemini-3.5-flash`. Same pair for every agent.
 - **Mock provider:** if `provider: mock`, load `fixtures/mock/<test_id>/<agent>.json` and
   return it with latency 0 and tokens 0. Create mock fixtures for T01 by hand, matching
   the expected answer in `BUILD_SPEC_B` Section 7.1.
@@ -599,9 +614,13 @@ Commit: `Phase 1: foundation and preprocessing`
 - **On validation error:** always validate the parsed response with pydantic; on
   failure, retry up to `max_retries` times, appending the validation error to the
   prompt ("Your previous output failed validation: ... Return corrected JSON.").
-- **On rate-limit / quota error** (HTTP 429 or "resource exhausted"): back off
-  exponentially (2s, 4s, 8s), then raise a clear `ProviderUnavailable` error — callers
-  (the Streamlit app especially) must catch this and degrade gracefully, not crash.
+- **On a retryable provider error** (HTTP 429 rate-limit/quota, 500/503/504 transient
+  server errors — 504 confirmed live during testing): back off exponentially (2s, 4s)
+  across 3 attempts on the current model; if still failing, switch to the fallback
+  model and run the same 3-attempt schedule there; only once both models are
+  exhausted does this raise a clear `ProviderUnavailable` error — callers (the
+  Streamlit app especially) must catch this and degrade gracefully, not crash.
+  `CallLog.model` records whichever model actually answered.
 - **`CallLog`:** `agent, provider, model, prompt_version, latency_s, input_tokens,
   output_tokens, cost_eur (always 0.0 for gemini free tier and mock),
   cost_eur_if_paid_est (null unless `paid_price_per_mtok_eur` is set), retries, ok`.

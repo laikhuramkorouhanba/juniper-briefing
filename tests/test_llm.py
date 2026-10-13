@@ -62,10 +62,10 @@ class _FakeAdapter:
         self.responses = responses
         self.calls = 0
 
-    def generate(self, prompt, output_model, model_name):
+    def generate(self, prompt, output_model):
         text = self.responses[self.calls]
         self.calls += 1
-        return text, 10, 5
+        return text, 10, 5, "fake-model"
 
 
 VALID_AGENT1 = (

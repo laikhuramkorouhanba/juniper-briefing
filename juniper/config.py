@@ -65,15 +65,27 @@ class Config:
     def gemini_api_key(self) -> Optional[str]:
         return _read_streamlit_secret("GEMINI_API_KEY") or os.environ.get("GEMINI_API_KEY") or None
 
-    # ---- models ---------------------------------------------------------
+    # ---- models -----------------------------------------------------------
+    # One model pair for the whole pipeline (not per-agent): a fast/cheap primary
+    # and a sturdier fallback used when the primary is erroring out. No model
+    # name is hardcoded in Python — both come from the environment, with the
+    # same st.secrets-first precedence as the API key.
 
-    def model_for(self, agent: str, provider: Optional[str] = None) -> str:
-        """The model name configured for `agent` under `provider` (default: the
-        active provider). Mock mode has no model of its own; it reports the gemini
-        name for display purposes only (no call is actually made)."""
-        provider = provider or self.provider
-        lookup = provider if provider != "mock" else "gemini"
-        return self.raw["models"][lookup][agent]
+    @property
+    def gemini_model(self) -> str:
+        return (
+            _read_streamlit_secret("GEMINI_MODEL")
+            or os.environ.get("GEMINI_MODEL")
+            or "gemini-3.1-flash-lite"
+        )
+
+    @property
+    def gemini_fallback_model(self) -> str:
+        return (
+            _read_streamlit_secret("GEMINI_FALLBACK_MODEL")
+            or os.environ.get("GEMINI_FALLBACK_MODEL")
+            or "gemini-3.5-flash"
+        )
 
     def prompt_version(self, agent: str) -> str:
         return self.raw["prompt_versions"][agent]
