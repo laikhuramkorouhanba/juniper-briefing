@@ -196,15 +196,22 @@ pytest -q
 
 ### 4.2 `requirements.txt`
 
+> **Amended 2026-10-13:** no paid Anthropic API key is available. Provider is now
+> **Gemini (free tier) primary, Ollama (local-only) fallback, mock as the safety net**.
+> See `docs/decisions.md`.
+
 ```
-anthropic>=0.40
 streamlit>=1.38
 pandas>=2.2
 pydantic>=2.7
 python-dotenv>=1.0
 pyyaml>=6.0
 pytest>=8.0
+google-genai>=1.2.0
+ollama>=0.4.7
 ```
+
+Pin versions that install cleanly on Streamlit Community Cloud (the deploy target).
 
 ### 4.3 `.gitignore`
 
@@ -220,17 +227,31 @@ runs/*
 
 ### 4.4 `config.yaml`
 
+> **Amended 2026-10-13:** `provider` is now `gemini | ollama | mock` (no `anthropic`).
+> Models are keyed per provider. Pricing is reframed as an optional paid-tier estimate,
+> since Gemini free tier, Ollama and mock all cost €0. See `docs/decisions.md`.
+
 ```yaml
-provider: anthropic            # anthropic | mock
+provider: gemini                # gemini | ollama | mock
+                                 # gemini: free-tier Gemini Flash (needs GEMINI_API_KEY)
+                                 # ollama: local-only, needs a running Ollama server
+                                 # mock: no key, no network — reads fixtures/mock/
 
-models:                        # use whichever models your API key can access
-  agent1_tagger: claude-haiku-5-5
-  agent2_polarity: claude-haiku-5-5
-  agent4_brief: claude-sonnet-5-5
-  agent5_editor: claude-sonnet-5-5
-  baseline: claude-sonnet-5-5  # baseline uses the strongest model in the pipeline, so the comparison is fair
+models:
+  gemini:
+    agent1_tagger: gemini-3.5-flash
+    agent2_polarity: gemini-3.5-flash
+    agent4_brief: gemini-3.5-flash
+    agent5_editor: gemini-3.5-flash
+    baseline: gemini-3.5-flash
+  ollama:
+    agent1_tagger: qwen2.5:7b
+    agent2_polarity: qwen2.5:7b
+    agent4_brief: qwen2.5:7b
+    agent5_editor: qwen2.5:7b
+    baseline: qwen2.5:7b        # baseline uses the same model as the pipeline, so the comparison is fair
 
-prompt_versions:               # bump to v2, v3... when iterating (B edits these)
+prompt_versions:                # bump to v2, v3... when iterating (B edits these)
   agent1_tagger: v1
   agent2_polarity: v1
   agent4_brief: v1
@@ -240,25 +261,29 @@ prompt_versions:               # bump to v2, v3... when iterating (B edits these
 llm:
   temperature: 0
   max_tokens: 4000
-  max_retries: 2               # retry on schema validation failure, sending the error back
-  agent4_concurrency: 4        # Agent 4 calls run in parallel
+  max_retries: 3                # retry on schema validation failure, sending the error back
+  agent4_concurrency:
+    gemini: 1                   # keep gemini free-tier rate limits happy
+    ollama: 2
   batch_mode:
-    agent1_tagger: whole_batch # whole_batch | per_comment (iteration lever: per_comment is more robust, slower)
-    agent2_polarity: whole_batch
+    agent1_tagger: per_comment  # small/free models are more reliable one comment at a time
+    agent2_polarity: per_comment
 
-pricing_per_mtok:              # fill in from the pricing page on docs.claude.com before the test phase
-  claude-haiku-5-5:  {input: null, output: null}
-  claude-sonnet-5-5: {input: null, output: null}
-                               # if null, cost is reported as "n/a (pricing not set)"
+ollama_host: http://localhost:11434
+
+paid_price_per_mtok_eur:        # optional; shows what the same run would cost on a paid tier.
+                                 # null by default -> reported as "n/a (pricing not set)"
+  gemini-3.5-flash: {input: null, output: null}
+  "qwen2.5:7b":      {input: null, output: null}   # local model: no paid equivalent, always null
 
 known_branches: [Central, Riverside, Station]
 
 scoring:
-  single_mention_max: 1        # mentions <= 1 -> "single mention"
+  single_mention_max: 1         # mentions <= 1 -> "single mention"
   # mentions >= 2 -> "repeated"
 
 verify:
-  forbidden_phrases:           # overclaiming / causal language -> WARN
+  forbidden_phrases:            # overclaiming / causal language -> WARN
     - "all customers"
     - "every customer"
     - "customers always"
@@ -267,13 +292,20 @@ verify:
     - "because of"
     - "due to"
     - "the reason is"
+
+app:
+  max_live_runs_per_session: 5  # quota protection in the Streamlit app
 ```
 
 ### 4.5 `.env.example`
 
 ```
-ANTHROPIC_API_KEY=
+GEMINI_API_KEY=
 ```
+
+`juniper/config.py` reads `GEMINI_API_KEY` and an optional `PROVIDER` override from
+`st.secrets` when running under Streamlit and they exist there, otherwise from `.env` /
+environment variables. Never print or log the key.
 
 ---
 
@@ -558,19 +590,42 @@ Commit: `Phase 1: foundation and preprocessing`
 
 ### Phase 2 · LLM client and mock mode (0:40 to 0:55)
 
-`juniper/llm.py`:
+> **Amended 2026-10-13:** replaces the Anthropic-only version. No paid API key is
+> available; providers are Gemini (free tier, primary), Ollama (local-only fallback)
+> and mock (safety net). See `docs/decisions.md`.
+
+`juniper/llm.py` — same interface regardless of provider:
 
 - `call_structured(agent_name, prompt_text, output_model) -> (parsed_model, CallLog)`
-- **Structured output:** use Anthropic tool use. Define one tool called `submit` whose `input_schema` is `output_model.model_json_schema()`, and force it with `tool_choice={"type": "tool", "name": "submit"}`. Parse the tool input with the pydantic model.
-- **On validation error:** retry up to `max_retries` times, appending the validation error to the prompt ("Your previous output failed validation: ... Return corrected JSON.").
-- Temperature and max_tokens come from config.
-- **`CallLog`:** `agent, model, prompt_version, latency_s, input_tokens, output_tokens, cost_eur_est (or null), retries, ok`.
-- **Mock provider:** if `provider: mock`, load `fixtures/mock/<test_id>/<agent>.json` and return it with latency 0 and tokens 0. Create mock fixtures for T01 by hand, matching the expected answer in `BUILD_SPEC_B` Section 7.1.
-- Comment text is always wrapped in `<comments>...</comments>` delimiters inside the prompt (B's templates already do this).
+- **Gemini** (`google-genai` SDK): `temperature=0`, `response_mime_type="application/json"`,
+  `response_schema` built from the pydantic model. If the schema is rejected (e.g. due
+  to `Optional` or nested fields), fall back to plain JSON mode and append the JSON
+  schema to the prompt text instead.
+- **Ollama** (`ollama` Python library, imported lazily so it's never required on the
+  deployed app): `format=output_model.model_json_schema()`, `options={"temperature": 0}`,
+  host from `config.yaml`'s `ollama_host`.
+- **Mock provider:** if `provider: mock`, load `fixtures/mock/<test_id>/<agent>.json` and
+  return it with latency 0 and tokens 0. Create mock fixtures for T01 by hand, matching
+  the expected answer in `BUILD_SPEC_B` Section 7.1.
+- Comment text is always wrapped in `<comments>...</comments>` delimiters inside the
+  prompt (B's templates already do this).
+- **On validation error:** always validate the parsed response with pydantic; on
+  failure, retry up to `max_retries` times, appending the validation error to the
+  prompt ("Your previous output failed validation: ... Return corrected JSON.").
+- **On rate-limit / quota error** (HTTP 429 or "resource exhausted"): back off
+  exponentially (2s, 4s, 8s), then raise a clear `ProviderUnavailable` error — callers
+  (the Streamlit app especially) must catch this and degrade gracefully, not crash.
+- **`CallLog`:** `agent, provider, model, prompt_version, latency_s, input_tokens,
+  output_tokens, cost_eur (always 0.0 for gemini free tier, ollama and mock),
+  cost_eur_if_paid_est (null unless `paid_price_per_mtok_eur` is set), retries, ok`.
 
-**Tests:** in mock mode, every agent's fixture validates against its model.
+`check_llm.py`: a CLI that sends one tiny structured request to the configured
+provider and prints OK, latency and tokens. Supports `--provider`.
 
-Commit: `Phase 2: LLM client with structured output and mock mode`
+**Tests:** in mock mode, every agent's fixture validates against its model; the retry
+logic works correctly against a fake client that fails validation once then succeeds.
+
+Commit: `Phase 2: LLM client (gemini/ollama/mock) with structured output and retries`
 
 ### Phase 3 · Agents 1 and 2 (0:55 to 1:10)
 
@@ -646,6 +701,10 @@ Do a full real run on T01, then open `briefing.md` together. From here on: fixes
 
 ### Phase 7 · Baseline, metrics and test runner (1:50 to 2:05)
 
+> **Amended 2026-10-13:** `run_pipeline.py` and `run_tests.py` accept `--provider`
+> (`gemini | ollama | mock`). The results table reports cost as "€0 (free tier /
+> local)" and shows `cost_eur_if_paid_est` only when `paid_price_per_mtok_eur` is set.
+
 - **`baseline.py`:** a single call with `prompts/baseline/vN.md` and the `baseline` model, output schema 5.10. Logs latency and cost the same way.
 - **`metrics.py`** scores any run against `answer_key.json[test_id]`:
 
@@ -678,13 +737,26 @@ Commit: `Phase 7: baseline, metrics, test runner`
 
 ### Phase 8 · Streamlit app (2:05 to 2:20, can run in parallel with testing)
 
+> **Amended 2026-10-13:** the app must be deployable on Streamlit Community Cloud with
+> one click, with no Ollama available there and no guarantee of a Gemini key. See the
+> four additions below, folded into the tab list.
+
 `app.py`. Keep it clean and simple, using `st.tabs`:
 
 1. **Run:**
-   - upload a CSV (or choose one from `data/`)
-   - provider toggle (mock or real)
-   - a "Run pipeline" button
-   - a live progress line per stage using `st.status`, showing the stage name, its time and its token cost
+   - a sample-batch dropdown listing every file in `data/tests/` (default `T01`), so the
+     reviewer doesn't need to upload anything; uploading a CSV is still allowed
+   - a provider toggle, built from a startup availability check: Gemini needs a key,
+     Ollama needs its host to answer within 1 second. Only working providers are shown
+     — on Streamlit Cloud, Ollama is therefore hidden automatically
+   - a "Run pipeline" button, disabled past `app.max_live_runs_per_session` live runs
+     for this session
+   - a live progress line per stage using `st.status`, showing the stage name, its time
+     and its token cost
+   - results are cached with `st.cache_data`, keyed by a hash of the CSV + config +
+     provider, so re-running the same input doesn't re-spend quota
+   - if `ProviderUnavailable` is raised, show "Live model unavailable right now, see the
+     Demo tab" instead of crashing
 2. **Briefing:** the rendered `briefing.md`, with the gate status badge at the top (green PASS, amber WARN, red FAIL) and expanders listing every WARN and FAIL.
 3. **Evidence:**
    - a filter by shop and theme
@@ -697,6 +769,10 @@ Commit: `Phase 7: baseline, metrics, test runner`
    - if the gate is FAIL, Approve is disabled unless "I have checked the failures" is ticked and a note is written
    - writes `review.json`
 6. **Metrics:** if a `results.md` exists for the latest test run, display it.
+7. **Demo (saved results):** loads `runs/final/` — briefing, evidence, pipeline trace,
+   verification and `results.md` (prototype vs baseline). Works with no key and no
+   network. If no live provider is available at startup, this tab opens by default with
+   the note "Showing saved results from our final test run."
 
 Caching: `st.session_state` holds the current `RunResult`.
 
@@ -718,6 +794,13 @@ Commit: `Phase 8: Streamlit review app`
   - where results are
   - known limitations
   - team contributions (copy from `BUILD_SPEC_B` Section 12)
+  - **Try it online:** the app link, with a note that the first load can take a minute
+    because the app sleeps
+  - **Run locally with Gemini:** get a free key from Google AI Studio, put it in `.env`
+  - **Run fully offline:** install Ollama, `ollama pull qwen2.5:7b`, run with
+    `--provider ollama`
+  - **Deploy:** share.streamlit.io, main file `app.py`, Secrets containing
+    `GEMINI_API_KEY` and `PROVIDER = "gemini"`
 - **Appendix zip:** `git archive -o juniper-briefing.zip HEAD`, plus `runs/final/`.
 
 ---
@@ -755,10 +838,11 @@ Commit: `Phase 8: Streamlit review app`
 ## 8. Definition of done (Person A)
 
 - [ ] `pytest -q` passes
-- [ ] `python run_pipeline.py data/batch_original.csv` works in both mock and real mode
+- [ ] `python run_pipeline.py data/batch_original.csv` works in mock mode, and in gemini or ollama mode when a key/host is available
 - [ ] `python run_tests.py` produces `results.md` for 12 or more tests, prototype vs baseline, with latency and cost
 - [ ] the T01 gate is PASS or WARN, and every WARN is explained
-- [ ] the Streamlit app runs: upload, run, briefing, evidence, trace, review, metrics
+- [ ] the Streamlit app runs: sample-batch dropdown or upload, run, briefing, evidence, trace, review, metrics, demo tab
+- [ ] the app is deployed on Streamlit Community Cloud and loads with no key (Demo tab)
 - [ ] `review.json` is written on approval
 - [ ] `runs/final/` committed
 - [ ] README complete, with run instructions and contributions

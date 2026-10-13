@@ -1,13 +1,23 @@
-provider: anthropic            # anthropic | mock
+provider: gemini                # gemini | ollama | mock
+                                 # gemini: free-tier Gemini Flash (needs GEMINI_API_KEY)
+                                 # ollama: local-only, needs a running Ollama server
+                                 # mock: no key, no network — reads fixtures/mock/
 
-models:                        # use whichever models your API key can access
-  agent1_tagger: claude-haiku-4-5
-  agent2_polarity: claude-haiku-4-5
-  agent4_brief: claude-sonnet-5
-  agent5_editor: claude-sonnet-5
-  baseline: claude-sonnet-5    # baseline uses the strongest model in the pipeline, so the comparison is fair
+models:
+  gemini:
+    agent1_tagger: gemini-3.5-flash
+    agent2_polarity: gemini-3.5-flash
+    agent4_brief: gemini-3.5-flash
+    agent5_editor: gemini-3.5-flash
+    baseline: gemini-3.5-flash
+  ollama:
+    agent1_tagger: qwen2.5:7b
+    agent2_polarity: qwen2.5:7b
+    agent4_brief: qwen2.5:7b
+    agent5_editor: qwen2.5:7b
+    baseline: qwen2.5:7b        # baseline uses the same model as the pipeline, so the comparison is fair
 
-prompt_versions:               # bump to v2, v3... when iterating (B edits these)
+prompt_versions:                # bump to v2, v3... when iterating (B edits these)
   agent1_tagger: v1
   agent2_polarity: v1
   agent4_brief: v1
@@ -17,25 +27,29 @@ prompt_versions:               # bump to v2, v3... when iterating (B edits these
 llm:
   temperature: 0
   max_tokens: 4000
-  max_retries: 2               # retry on schema validation failure, sending the error back
-  agent4_concurrency: 4        # Agent 4 calls run in parallel
+  max_retries: 3                # retry on schema validation failure, sending the error back
+  agent4_concurrency:
+    gemini: 1                   # keep gemini free-tier rate limits happy
+    ollama: 2
   batch_mode:
-    agent1_tagger: whole_batch # whole_batch | per_comment (iteration lever: per_comment is more robust, slower)
-    agent2_polarity: whole_batch
+    agent1_tagger: per_comment  # small/free models are more reliable one comment at a time
+    agent2_polarity: per_comment
 
-pricing_per_mtok:              # fill in from the pricing page on docs.claude.com before the test phase
-  claude-haiku-4-5:  {input: 1.00, output: 5.00}
-  claude-sonnet-5:   {input: 2.00, output: 10.00}
-                               # if null, cost is reported as "n/a (pricing not set)"
+ollama_host: http://localhost:11434
+
+paid_price_per_mtok_eur:        # optional; shows what the same run would cost on a paid tier.
+                                 # null by default -> reported as "n/a (pricing not set)"
+  gemini-3.5-flash: {input: null, output: null}
+  "qwen2.5:7b":      {input: null, output: null}   # local model: no paid equivalent, always null
 
 known_branches: [Central, Riverside, Station]
 
 scoring:
-  single_mention_max: 1        # mentions <= 1 -> "single mention"
+  single_mention_max: 1         # mentions <= 1 -> "single mention"
   # mentions >= 2 -> "repeated"
 
 verify:
-  forbidden_phrases:           # overclaiming / causal language -> WARN
+  forbidden_phrases:            # overclaiming / causal language -> WARN
     - "all customers"
     - "every customer"
     - "customers always"
@@ -44,3 +58,6 @@ verify:
     - "because of"
     - "due to"
     - "the reason is"
+
+app:
+  max_live_runs_per_session: 5  # quota protection in the Streamlit app
