@@ -1,0 +1,14 @@
+{
+  "shop": "Station",
+  "theme": "waiting_time",
+  "summary_of_comments": "One visit reported a ten-minute queue, nearly missing a train (F06).",
+  "interpretation": "Possible reading: queues at Station may be tight against train departure times.",
+  "cta": {
+    "action": "Time the queue at Station around common train departure times for one week.",
+    "kind": "investigate",
+    "data_needed": ["queue length by time of day", "nearby train departure times"],
+    "success_signal": "A clear picture of whether queues regularly risk a missed train."
+  },
+  "cited_ids": ["F06"],
+  "key_quotes": [{"comment_id": "F06", "quote": "queue took ten minutes"}]
+}

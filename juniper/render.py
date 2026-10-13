@@ -75,7 +75,10 @@ def render_briefing(
             lines.append(f"### {brief.theme}")
             lines.append(brief.summary_of_comments)
             lines.append("")
-            lines.append(f"_Possible reading: {brief.interpretation}_")
+            # Agent 4's own prompt instructs it to phrase this as an interpretation
+            # (e.g. "Possible reading: ..." per docs/contracts.md 5.8's example) —
+            # render.py doesn't add its own prefix on top of that.
+            lines.append(f"_{brief.interpretation}_")
             lines.append("")
             lines.append(f"**Suggested action ({brief.cta.kind}):** {brief.cta.action}")
             if brief.cta.data_needed:

@@ -1,0 +1,14 @@
+{
+  "shop": "Central",
+  "theme": "cleanliness",
+  "summary_of_comments": "One visit could not find a clean table (F02).",
+  "interpretation": "Possible reading: table turnover may be too slow at busy times.",
+  "cta": {
+    "action": "Check table-clearing frequency at Central during the morning rush.",
+    "kind": "investigate",
+    "data_needed": ["time between table clearings", "staff on cleaning duty at peak"],
+    "success_signal": "A clear picture of how long tables sit uncleared at peak."
+  },
+  "cited_ids": ["F02"],
+  "key_quotes": [{"comment_id": "F02", "quote": "could not find a clean table"}]
+}

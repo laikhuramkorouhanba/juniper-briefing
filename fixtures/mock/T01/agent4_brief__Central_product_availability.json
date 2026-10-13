@@ -1,0 +1,14 @@
+{
+  "shop": "Central",
+  "theme": "product_availability",
+  "summary_of_comments": "One visit found oat milk sold out (F05).",
+  "interpretation": "Possible reading: oat milk demand may be outpacing restocking.",
+  "cta": {
+    "action": "Check oat milk stock levels at Central at opening for one week.",
+    "kind": "small_test",
+    "data_needed": ["oat milk deliveries per week", "time of day stock ran out"],
+    "success_signal": "Confirmation of whether oat milk reliably runs out, and when."
+  },
+  "cited_ids": ["F05"],
+  "key_quotes": [{"comment_id": "F05", "quote": "Oat milk was sold out"}]
+}

@@ -35,13 +35,14 @@ def call_with_semantic_retry(
     config: Config,
     test_id: Optional[str] = None,
     adapter: Optional[Adapter] = None,
+    fixture_key: Optional[str] = None,
 ) -> tuple[T, CallLog]:
     """
     build_prompt(extra_instruction) -> full prompt text. Called with "" on the
       first attempt, and with a correction instruction (summarising the failed
       checks) on every retry.
     validate(parsed) -> list of human-readable error strings; empty = valid.
-    `adapter` is a test injection point, passed straight through to call_structured.
+    `adapter` and `fixture_key` are passed straight through to call_structured.
     """
     extra_instruction = ""
     last_errors: list[str] = []
@@ -50,7 +51,8 @@ def call_with_semantic_retry(
         prompt = build_prompt(extra_instruction)
         try:
             parsed, log = call_structured(
-                agent_name, prompt, output_model, config=config, test_id=test_id, adapter=adapter
+                agent_name, prompt, output_model, config=config, test_id=test_id,
+                adapter=adapter, fixture_key=fixture_key,
             )
         except StructuredCallFailed as exc:
             raise SemanticValidationError(str(exc)) from exc

@@ -1,0 +1,14 @@
+{
+  "shop": "Riverside",
+  "theme": "waiting_time",
+  "summary_of_comments": "One visit ordered ahead but still waited ten minutes to collect (F10).",
+  "interpretation": "Possible reading: order-ahead pickup may not be prioritised over walk-ins.",
+  "cta": {
+    "action": "Time order-ahead pickup against order time at Riverside for one week.",
+    "kind": "investigate",
+    "data_needed": ["order-ahead timestamps", "collection timestamps"],
+    "success_signal": "A clear picture of typical order-ahead wait time."
+  },
+  "cited_ids": ["F10"],
+  "key_quotes": [{"comment_id": "F10", "quote": "waited ten minutes to collect"}]
+}

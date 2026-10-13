@@ -1,0 +1,14 @@
+{
+  "shop": "Riverside",
+  "theme": "checkout_receipt",
+  "summary_of_comments": "One visit had to ask twice for a receipt (F12).",
+  "interpretation": "Possible reading: receipts may not be offered by default at checkout.",
+  "cta": {
+    "action": "Check whether staff at Riverside offer a receipt by default for one week.",
+    "kind": "small_test",
+    "data_needed": ["receipt offer rate observed at checkout"],
+    "success_signal": "Confirmation of whether receipts are offered without being asked twice."
+  },
+  "cited_ids": ["F12"],
+  "key_quotes": [{"comment_id": "F12", "quote": "ask twice for my receipt"}]
+}

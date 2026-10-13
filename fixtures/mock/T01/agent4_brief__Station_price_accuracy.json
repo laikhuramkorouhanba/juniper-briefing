@@ -1,0 +1,14 @@
+{
+  "shop": "Station",
+  "theme": "price_accuracy",
+  "summary_of_comments": "One visit found the board price differed from what they paid; staff corrected it on the spot (F03).",
+  "interpretation": "Possible reading: the price board may not always be kept in sync with the till.",
+  "cta": {
+    "action": "Check the price board against the till for every item at Station once a week.",
+    "kind": "small_test",
+    "data_needed": ["price board photo", "till price list"],
+    "success_signal": "Confirmation that board and till prices match, or a list of the mismatches found."
+  },
+  "cited_ids": ["F03"],
+  "key_quotes": [{"comment_id": "F03", "quote": "price on the board differed from what I paid"}]
+}

@@ -121,6 +121,7 @@ def _build_one_brief(
         config=config,
         test_id=test_id,
         adapter=adapter,
+        fixture_key=f"{shop}_{theme}",
     )
 
 

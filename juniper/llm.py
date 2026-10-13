@@ -71,16 +71,30 @@ class Adapter(Protocol):
 # ---------------------------------------------------------------------------
 
 
-def _load_mock_fixture(test_id: str, agent_name: str, output_model: Type[T]) -> T:
-    path = FIXTURES_DIR / test_id / f"{agent_name}.json"
-    if not path.exists():
-        raise FileNotFoundError(
-            f"Mock fixture not found: {path}. provider: mock needs no key/network, "
-            "but it does need a canned response for every (test_id, agent) pair it's "
-            "asked for."
-        )
-    data = json.loads(path.read_text())
-    return output_model.model_validate(data)
+def _load_mock_fixture(
+    test_id: str, agent_name: str, output_model: Type[T], fixture_key: Optional[str] = None
+) -> T:
+    """Loads fixtures/mock/<test_id>/<agent_name>.json, or, when an agent makes
+    several distinct calls per run (Agent 4: one per (shop, negative theme)),
+    fixtures/mock/<test_id>/<agent_name>__<fixture_key>.json. Falls back to the
+    unkeyed file if a keyed one isn't there, so single-call agents (1, 2, 5,
+    baseline) never need the suffix."""
+    candidates = []
+    if fixture_key:
+        safe_key = fixture_key.replace("/", "_").replace(" ", "_")
+        candidates.append(FIXTURES_DIR / test_id / f"{agent_name}__{safe_key}.json")
+    candidates.append(FIXTURES_DIR / test_id / f"{agent_name}.json")
+
+    for path in candidates:
+        if path.exists():
+            data = json.loads(path.read_text())
+            return output_model.model_validate(data)
+
+    raise FileNotFoundError(
+        f"Mock fixture not found: tried {[str(p) for p in candidates]}. provider: mock "
+        "needs no key/network, but it does need a canned response for every "
+        "(test_id, agent[, fixture_key]) combination it's asked for."
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -234,6 +248,7 @@ def call_structured(
     config: Optional[Config] = None,
     test_id: Optional[str] = None,
     adapter: Optional[Adapter] = None,
+    fixture_key: Optional[str] = None,
 ) -> tuple[T, CallLog]:
     """Call the configured provider and return a validated output_model instance
     plus a CallLog.
@@ -244,7 +259,8 @@ def call_structured(
     CallLog) rather than crashing silently.
 
     `adapter` is an injection point for tests (anything implementing Adapter.generate)
-    and is never required in normal use.
+    and is never required in normal use. `fixture_key` disambiguates mock fixtures
+    for agents that make several distinct calls per run (Agent 4: one per shop/theme).
     """
     config = config or get_config()
     provider = config.provider
@@ -254,7 +270,7 @@ def call_structured(
         if not test_id:
             raise ValueError("provider 'mock' requires a test_id to pick the right fixture")
         start = time.monotonic()
-        parsed = _load_mock_fixture(test_id, agent_name, output_model)
+        parsed = _load_mock_fixture(test_id, agent_name, output_model, fixture_key)
         latency = time.monotonic() - start
         return parsed, CallLog(
             agent=agent_name,
