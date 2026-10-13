@@ -14,7 +14,7 @@ from typing import Callable, Optional, Type, TypeVar
 from pydantic import BaseModel
 
 from juniper.config import Config
-from juniper.llm import StructuredCallFailed, call_structured
+from juniper.llm import Adapter, StructuredCallFailed, call_structured
 from juniper.models import CallLog
 
 T = TypeVar("T", bound=BaseModel)
@@ -34,12 +34,14 @@ def call_with_semantic_retry(
     *,
     config: Config,
     test_id: Optional[str] = None,
+    adapter: Optional[Adapter] = None,
 ) -> tuple[T, CallLog]:
     """
     build_prompt(extra_instruction) -> full prompt text. Called with "" on the
       first attempt, and with a correction instruction (summarising the failed
       checks) on every retry.
     validate(parsed) -> list of human-readable error strings; empty = valid.
+    `adapter` is a test injection point, passed straight through to call_structured.
     """
     extra_instruction = ""
     last_errors: list[str] = []
@@ -47,7 +49,9 @@ def call_with_semantic_retry(
     for _attempt in range(config.max_retries + 1):
         prompt = build_prompt(extra_instruction)
         try:
-            parsed, log = call_structured(agent_name, prompt, output_model, config=config, test_id=test_id)
+            parsed, log = call_structured(
+                agent_name, prompt, output_model, config=config, test_id=test_id, adapter=adapter
+            )
         except StructuredCallFailed as exc:
             raise SemanticValidationError(str(exc)) from exc
 
