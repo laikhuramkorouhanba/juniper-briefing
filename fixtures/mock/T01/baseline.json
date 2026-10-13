@@ -1,0 +1,35 @@
+{
+  "visits_total": 12,
+  "duplicates_noticed": [],
+  "shops": [
+    {
+      "shop": "Central",
+      "visits": 5,
+      "themes": [
+        {"theme": "waiting_time", "n_pos": 1, "n_neg": 1, "positive_ids": ["F09"], "negative_ids": ["F01"]},
+        {"theme": "cleanliness", "n_pos": 0, "n_neg": 1, "positive_ids": [], "negative_ids": ["F02"]},
+        {"theme": "product_availability", "n_pos": 0, "n_neg": 1, "positive_ids": [], "negative_ids": ["F05"]}
+      ],
+      "summary": "Mostly positive on coffee and staff; waiting time is mixed and a table was dirty.",
+      "actions": [{"theme": "waiting_time", "action": "Check queue times during the morning rush."}]
+    },
+    {
+      "shop": "Riverside",
+      "visits": 4,
+      "themes": [
+        {"theme": "waiting_time", "n_pos": 0, "n_neg": 1, "positive_ids": [], "negative_ids": ["F10"]}
+      ],
+      "summary": "Generally positive; one visit waited despite ordering ahead.",
+      "actions": [{"theme": "waiting_time", "action": "Look into order-ahead pickup times."}]
+    },
+    {
+      "shop": "Station",
+      "visits": 2,
+      "themes": [
+        {"theme": "waiting_time", "n_pos": 0, "n_neg": 1, "positive_ids": [], "negative_ids": ["F06"]}
+      ],
+      "summary": "A price was corrected on the spot; one visit reported a 10-minute queue.",
+      "actions": [{"theme": "waiting_time", "action": "Check queue times at Station."}]
+    }
+  ]
+}

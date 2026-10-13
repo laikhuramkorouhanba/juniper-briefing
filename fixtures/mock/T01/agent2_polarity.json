@@ -1,0 +1,41 @@
+{
+  "items": [
+    {"comment_id": "F01", "assessments": [
+      {"theme": "coffee_quality", "polarity": "positive", "quote": "Lovely coffee", "rationale": "Praises the coffee."},
+      {"theme": "waiting_time", "polarity": "negative", "quote": "queued for 15 minutes", "rationale": "Reports a long queue."}
+    ]},
+    {"comment_id": "F02", "assessments": [
+      {"theme": "staff_service", "polarity": "positive", "quote": "The team was friendly", "rationale": "Praises staff friendliness."},
+      {"theme": "cleanliness", "polarity": "negative", "quote": "could not find a clean table", "rationale": "Reports no clean table was available."}
+    ]},
+    {"comment_id": "F03", "assessments": [
+      {"theme": "price_accuracy", "polarity": "negative", "quote": "The price on the board differed from what I paid", "rationale": "Reports a billing discrepancy."},
+      {"theme": "staff_service", "polarity": "positive", "quote": "Staff corrected it", "rationale": "Staff resolved the issue well."}
+    ]},
+    {"comment_id": "F04", "assessments": [
+      {"theme": "atmosphere_seating", "polarity": "positive", "quote": "Quiet seats", "rationale": "Praises the seating."},
+      {"theme": "staff_service", "polarity": "positive", "quote": "friendly service", "rationale": "Praises staff friendliness."}
+    ]},
+    {"comment_id": "F05", "assessments": [
+      {"theme": "product_availability", "polarity": "negative", "quote": "Oat milk was sold out", "rationale": "Reports an item out of stock."}
+    ]},
+    {"comment_id": "F06", "assessments": [
+      {"theme": "waiting_time", "polarity": "negative", "quote": "The queue took ten minutes", "rationale": "Reports a long queue, nearly missed a train."}
+    ]},
+    {"comment_id": "F08", "assessments": [
+      {"theme": "atmosphere_seating", "polarity": "positive", "quote": "the quiet corner", "rationale": "Praises the seating."},
+      {"theme": "menu_range", "polarity": "suggestion", "quote": "Could you offer a vegan pastry?", "rationale": "Requests a new menu item, no problem reported."}
+    ]},
+    {"comment_id": "F09", "assessments": [
+      {"theme": "waiting_time", "polarity": "positive", "quote": "Quick service today", "rationale": "Praises fast service."}
+    ]},
+    {"comment_id": "F10", "assessments": [
+      {"theme": "waiting_time", "polarity": "negative", "quote": "waited ten minutes to collect", "rationale": "Reports a wait despite ordering ahead."}
+    ]},
+    {"comment_id": "F11", "assessments": []},
+    {"comment_id": "F12", "assessments": [
+      {"theme": "coffee_quality", "polarity": "positive", "quote": "Great coffee", "rationale": "Praises the coffee."},
+      {"theme": "checkout_receipt", "polarity": "negative", "quote": "had to ask twice for my receipt", "rationale": "Reports a checkout inconvenience."}
+    ]}
+  ]
+}

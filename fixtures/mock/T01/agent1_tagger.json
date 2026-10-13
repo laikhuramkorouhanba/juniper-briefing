@@ -1,0 +1,41 @@
+{
+  "items": [
+    {"comment_id": "F01", "usable": true, "themes": [
+      {"theme": "coffee_quality", "quote": "Lovely coffee"},
+      {"theme": "waiting_time", "quote": "queued for 15 minutes"}
+    ], "new_theme_suggestion": null},
+    {"comment_id": "F02", "usable": true, "themes": [
+      {"theme": "staff_service", "quote": "The team was friendly"},
+      {"theme": "cleanliness", "quote": "could not find a clean table"}
+    ], "new_theme_suggestion": null},
+    {"comment_id": "F03", "usable": true, "themes": [
+      {"theme": "price_accuracy", "quote": "The price on the board differed from what I paid"},
+      {"theme": "staff_service", "quote": "Staff corrected it"}
+    ], "new_theme_suggestion": null},
+    {"comment_id": "F04", "usable": true, "themes": [
+      {"theme": "atmosphere_seating", "quote": "Quiet seats"},
+      {"theme": "staff_service", "quote": "friendly service"}
+    ], "new_theme_suggestion": null},
+    {"comment_id": "F05", "usable": true, "themes": [
+      {"theme": "product_availability", "quote": "Oat milk was sold out"}
+    ], "new_theme_suggestion": null},
+    {"comment_id": "F06", "usable": true, "themes": [
+      {"theme": "waiting_time", "quote": "The queue took ten minutes"}
+    ], "new_theme_suggestion": null},
+    {"comment_id": "F08", "usable": true, "themes": [
+      {"theme": "atmosphere_seating", "quote": "the quiet corner"},
+      {"theme": "menu_range", "quote": "Could you offer a vegan pastry?"}
+    ], "new_theme_suggestion": null},
+    {"comment_id": "F09", "usable": true, "themes": [
+      {"theme": "waiting_time", "quote": "Quick service today"}
+    ], "new_theme_suggestion": null},
+    {"comment_id": "F10", "usable": true, "themes": [
+      {"theme": "waiting_time", "quote": "waited ten minutes to collect"}
+    ], "new_theme_suggestion": null},
+    {"comment_id": "F11", "usable": false, "themes": [], "new_theme_suggestion": null},
+    {"comment_id": "F12", "usable": true, "themes": [
+      {"theme": "coffee_quality", "quote": "Great coffee"},
+      {"theme": "checkout_receipt", "quote": "had to ask twice for my receipt"}
+    ], "new_theme_suggestion": null}
+  ]
+}

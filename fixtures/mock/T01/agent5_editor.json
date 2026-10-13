@@ -1,0 +1,32 @@
+{
+  "headline": "Waiting time is the only issue raised at all three branches this week.",
+  "shops": [
+    {
+      "shop": "Central",
+      "overview": "Customers praised the coffee and friendly staff. Problems raised: waiting time (mixed views), table cleanliness, oat milk availability.",
+      "priority_theme": "waiting_time",
+      "cited_ids": ["F01", "F02", "F05", "F09"]
+    },
+    {
+      "shop": "Riverside",
+      "overview": "Customers praised the seating, coffee and staff. Problems raised: waiting time, and a request for a vegan pastry.",
+      "priority_theme": "waiting_time",
+      "cited_ids": ["F04", "F08", "F10", "F12"]
+    },
+    {
+      "shop": "Station",
+      "overview": "One visit reported a price mismatch the staff corrected on the spot; another reported a 10-minute queue.",
+      "priority_theme": "waiting_time",
+      "cited_ids": ["F03", "F06"]
+    }
+  ],
+  "network_priority": {
+    "theme": "waiting_time",
+    "reason": "Raised at Central, Riverside and Station; the only problem seen at more than one branch.",
+    "action": "Time queues at all three branches during the morning peak for one week.",
+    "cited_ids": ["F01", "F06", "F10"]
+  },
+  "requests": ["Riverside: a customer asked for a vegan pastry option (F08)."],
+  "mixed_views_note": "Central: one visit reported a long queue (F01), another praised quick service (F09).",
+  "limitations": "Convenience sample of 11 visits, not a survey. One forwarded duplicate (F07) counted once. One comment had no usable detail (F11). Station has only 2 visits."
+}

@@ -1,0 +1,14 @@
+{
+  "shop": "Central",
+  "theme": "waiting_time",
+  "summary_of_comments": "One visit reported a 15-minute queue before work (F01). Another visit said service was quick during the morning rush (F09), so views are mixed.",
+  "interpretation": "Possible reading: waiting times at Central may vary across the morning peak.",
+  "cta": {
+    "action": "Time the queue at Central between 8:00 and 9:30 on three weekdays.",
+    "kind": "investigate",
+    "data_needed": ["orders per 15 minutes", "staff on shift at peak"],
+    "success_signal": "A clear picture of when queues exceed 10 minutes, or confirmation they rarely do."
+  },
+  "cited_ids": ["F01", "F09"],
+  "key_quotes": [{"comment_id": "F01", "quote": "queued for 15 minutes"}]
+}
