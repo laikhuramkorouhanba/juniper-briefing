@@ -117,7 +117,14 @@
       "Station": {"price_accuracy": [0, 2], "waiting_time": [0, 1]},
       "Riverside": {"atmosphere_seating": [2, 0], "staff_service": [1, 0], "waiting_time": [0, 1], "coffee_quality": [1, 0], "checkout_receipt": [0, 1]}
     },
+    "negative_briefs_expected": [
+      ["Central", "waiting_time"], ["Central", "cleanliness"], ["Central", "product_availability"],
+      ["Station", "price_accuracy"], ["Station", "waiting_time"],
+      ["Riverside", "waiting_time"], ["Riverside", "checkout_receipt"]
+    ],
+    "mixed_views": [["Central", "waiting_time"]],
     "shop_priorities": {"Central": "waiting_time", "Station": "price_accuracy", "Riverside": "waiting_time"},
+    "network_priority": "waiting_time",
     "special": ["possible_text_duplicate_flagged:F13"]
   },
 
@@ -172,7 +179,9 @@
       ["Riverside", "waiting_time"], ["Riverside", "checkout_receipt"],
       ["Airport", "waiting_time"]
     ],
+    "mixed_views": [["Central", "waiting_time"]],
     "shop_priorities": {"Central": "waiting_time", "Station": "waiting_time", "Riverside": "waiting_time", "Airport": "waiting_time"},
+    "network_priority": "waiting_time",
     "special": ["unknown_branch_flagged:Airport"]
   },
 
@@ -275,7 +284,11 @@
       "Station": {"staff_service": [1, 0], "waiting_time": [0, 1]},
       "Central": {"cleanliness": [0, 1]}
     },
-    "negative_briefs_expected": [["Riverside", "product_availability"], ["Station", "waiting_time"], ["Central", "cleanliness"]],
+    "negative_briefs_expected": [
+      ["Riverside", "product_availability"],
+      ["Station", "waiting_time"],
+      ["Central", "cleanliness"]
+    ],
     "mixed_views": [],
     "shop_priorities": {"Central": "cleanliness", "Riverside": "product_availability", "Station": "waiting_time"},
     "network_priority": "cleanliness",
