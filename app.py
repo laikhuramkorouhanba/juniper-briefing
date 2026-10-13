@@ -573,6 +573,11 @@ with _card("This week's comments"):
     )
     if effective_provider == "gemini" and quota_left <= 0:
         st.caption("You've created the maximum number of briefings for this session. Refresh the page to reset.")
+    if effective_provider == "gemini":
+        st.caption(
+            "Briefs are generated one at a time to stay within Gemini's free-tier "
+            "rate limits — a full batch can take 1–3 minutes."
+        )
 
     if st.button("Create briefing", disabled=run_disabled, type="primary"):
         cache = _get_run_cache()
@@ -581,7 +586,13 @@ with _card("This week's comments"):
             st.session_state["last_result_key"] = key
         else:
             label = (test_id or "upload").lower()
-            with st.spinner("Reading comments and preparing this week's briefing…"):
+            spinner_text = (
+                "Writing briefs one at a time to stay within Gemini's free-tier limits "
+                "— this can take 1–3 minutes…"
+                if effective_provider == "gemini"
+                else "Reading comments and preparing this week's briefing…"
+            )
+            with st.spinner(spinner_text):
                 try:
                     result = _run(
                         csv_bytes, csv_path,
