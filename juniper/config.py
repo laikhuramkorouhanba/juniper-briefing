@@ -57,17 +57,13 @@ class Config:
             or os.environ.get("PROVIDER")
         )
         value = (override or self.raw["provider"]).strip().lower()
-        if value not in ("gemini", "ollama", "mock"):
-            raise ValueError(f"Unknown provider {value!r}; expected gemini, ollama or mock")
+        if value not in ("gemini", "mock"):
+            raise ValueError(f"Unknown provider {value!r}; expected gemini or mock")
         return value
 
     @property
     def gemini_api_key(self) -> Optional[str]:
         return _read_streamlit_secret("GEMINI_API_KEY") or os.environ.get("GEMINI_API_KEY") or None
-
-    @property
-    def ollama_host(self) -> str:
-        return self.raw.get("ollama_host", "http://localhost:11434")
 
     # ---- models ---------------------------------------------------------
 

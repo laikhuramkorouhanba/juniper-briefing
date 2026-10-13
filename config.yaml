@@ -1,6 +1,5 @@
-provider: gemini                # gemini | ollama | mock
+provider: gemini                # gemini | mock
                                  # gemini: free-tier Gemini Flash (needs GEMINI_API_KEY)
-                                 # ollama: local-only, needs a running Ollama server
                                  # mock: no key, no network — reads fixtures/mock/
 
 models:
@@ -9,13 +8,7 @@ models:
     agent2_polarity: gemini-3.5-flash
     agent4_brief: gemini-3.5-flash
     agent5_editor: gemini-3.5-flash
-    baseline: gemini-3.5-flash
-  ollama:
-    agent1_tagger: qwen2.5:7b
-    agent2_polarity: qwen2.5:7b
-    agent4_brief: qwen2.5:7b
-    agent5_editor: qwen2.5:7b
-    baseline: qwen2.5:7b        # baseline uses the same model as the pipeline, so the comparison is fair
+    baseline: gemini-3.5-flash  # baseline uses the same model as the pipeline, so the comparison is fair
 
 prompt_versions:                # bump to v2, v3... when iterating (B edits these)
   agent1_tagger: v1
@@ -28,19 +21,14 @@ llm:
   temperature: 0
   max_tokens: 4000
   max_retries: 3                # retry on schema validation failure, sending the error back
-  agent4_concurrency:
-    gemini: 1                   # keep gemini free-tier rate limits happy
-    ollama: 2
+  agent4_concurrency: 1          # keep gemini free-tier rate limits happy
   batch_mode:
     agent1_tagger: per_comment  # small/free models are more reliable one comment at a time
     agent2_polarity: per_comment
 
-ollama_host: http://localhost:11434
-
 paid_price_per_mtok_eur:        # optional; shows what the same run would cost on a paid tier.
                                  # null by default -> reported as "n/a (pricing not set)"
   gemini-3.5-flash: {input: null, output: null}
-  "qwen2.5:7b":      {input: null, output: null}   # local model: no paid equivalent, always null
 
 known_branches: [Central, Riverside, Station]
 

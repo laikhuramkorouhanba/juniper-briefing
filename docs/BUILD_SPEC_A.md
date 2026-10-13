@@ -197,8 +197,8 @@ pytest -q
 ### 4.2 `requirements.txt`
 
 > **Amended 2026-10-13:** no paid Anthropic API key is available. Provider is now
-> **Gemini (free tier) primary, Ollama (local-only) fallback, mock as the safety net**.
-> See `docs/decisions.md`.
+> **Gemini (free tier), mock as the safety net**. No local-model fallback — the team
+> can't run it online, so it isn't worth the extra code path. See `docs/decisions.md`.
 
 ```
 streamlit>=1.38
@@ -208,7 +208,6 @@ python-dotenv>=1.0
 pyyaml>=6.0
 pytest>=8.0
 google-genai>=1.2.0
-ollama>=0.4.7
 ```
 
 Pin versions that install cleanly on Streamlit Community Cloud (the deploy target).
@@ -227,14 +226,14 @@ runs/*
 
 ### 4.4 `config.yaml`
 
-> **Amended 2026-10-13:** `provider` is now `gemini | ollama | mock` (no `anthropic`).
-> Models are keyed per provider. Pricing is reframed as an optional paid-tier estimate,
-> since Gemini free tier, Ollama and mock all cost €0. See `docs/decisions.md`.
+> **Amended 2026-10-13:** `provider` is now `gemini | mock` (no `anthropic`, no local
+> model — Ollama was dropped: it can't run on the deployed app, so it isn't worth a
+> second code path for a sprint project). Pricing is reframed as an optional paid-tier
+> estimate, since Gemini free tier and mock both cost €0. See `docs/decisions.md`.
 
 ```yaml
-provider: gemini                # gemini | ollama | mock
+provider: gemini                # gemini | mock
                                  # gemini: free-tier Gemini Flash (needs GEMINI_API_KEY)
-                                 # ollama: local-only, needs a running Ollama server
                                  # mock: no key, no network — reads fixtures/mock/
 
 models:
@@ -243,13 +242,7 @@ models:
     agent2_polarity: gemini-3.5-flash
     agent4_brief: gemini-3.5-flash
     agent5_editor: gemini-3.5-flash
-    baseline: gemini-3.5-flash
-  ollama:
-    agent1_tagger: qwen2.5:7b
-    agent2_polarity: qwen2.5:7b
-    agent4_brief: qwen2.5:7b
-    agent5_editor: qwen2.5:7b
-    baseline: qwen2.5:7b        # baseline uses the same model as the pipeline, so the comparison is fair
+    baseline: gemini-3.5-flash  # baseline uses the same model as the pipeline, so the comparison is fair
 
 prompt_versions:                # bump to v2, v3... when iterating (B edits these)
   agent1_tagger: v1
@@ -262,19 +255,14 @@ llm:
   temperature: 0
   max_tokens: 4000
   max_retries: 3                # retry on schema validation failure, sending the error back
-  agent4_concurrency:
-    gemini: 1                   # keep gemini free-tier rate limits happy
-    ollama: 2
+  agent4_concurrency: 1          # keep gemini free-tier rate limits happy
   batch_mode:
     agent1_tagger: per_comment  # small/free models are more reliable one comment at a time
     agent2_polarity: per_comment
 
-ollama_host: http://localhost:11434
-
 paid_price_per_mtok_eur:        # optional; shows what the same run would cost on a paid tier.
                                  # null by default -> reported as "n/a (pricing not set)"
   gemini-3.5-flash: {input: null, output: null}
-  "qwen2.5:7b":      {input: null, output: null}   # local model: no paid equivalent, always null
 
 known_branches: [Central, Riverside, Station]
 
@@ -591,19 +579,18 @@ Commit: `Phase 1: foundation and preprocessing`
 ### Phase 2 · LLM client and mock mode (0:40 to 0:55)
 
 > **Amended 2026-10-13:** replaces the Anthropic-only version. No paid API key is
-> available; providers are Gemini (free tier, primary), Ollama (local-only fallback)
-> and mock (safety net). See `docs/decisions.md`.
+> available; providers are Gemini (free tier) and mock (safety net). No local-model
+> fallback — the team can't run Ollama online, so it was dropped rather than carry a
+> second, mostly-unused code path. See `docs/decisions.md`.
 
 `juniper/llm.py` — same interface regardless of provider:
 
 - `call_structured(agent_name, prompt_text, output_model) -> (parsed_model, CallLog)`
 - **Gemini** (`google-genai` SDK): `temperature=0`, `response_mime_type="application/json"`,
-  `response_schema` built from the pydantic model. If the schema is rejected (e.g. due
-  to `Optional` or nested fields), fall back to plain JSON mode and append the JSON
-  schema to the prompt text instead.
-- **Ollama** (`ollama` Python library, imported lazily so it's never required on the
-  deployed app): `format=output_model.model_json_schema()`, `options={"temperature": 0}`,
-  host from `config.yaml`'s `ollama_host`.
+  `response_schema` set to the pydantic model class itself (the SDK converts it,
+  including `Optional` and nested fields, without a hand-built JSON schema). If the
+  API rejects the schema, fall back to plain JSON mode and append the JSON schema to
+  the prompt text instead.
 - **Mock provider:** if `provider: mock`, load `fixtures/mock/<test_id>/<agent>.json` and
   return it with latency 0 and tokens 0. Create mock fixtures for T01 by hand, matching
   the expected answer in `BUILD_SPEC_B` Section 7.1.
@@ -616,7 +603,7 @@ Commit: `Phase 1: foundation and preprocessing`
   exponentially (2s, 4s, 8s), then raise a clear `ProviderUnavailable` error — callers
   (the Streamlit app especially) must catch this and degrade gracefully, not crash.
 - **`CallLog`:** `agent, provider, model, prompt_version, latency_s, input_tokens,
-  output_tokens, cost_eur (always 0.0 for gemini free tier, ollama and mock),
+  output_tokens, cost_eur (always 0.0 for gemini free tier and mock),
   cost_eur_if_paid_est (null unless `paid_price_per_mtok_eur` is set), retries, ok`.
 
 `check_llm.py`: a CLI that sends one tiny structured request to the configured
@@ -625,7 +612,7 @@ provider and prints OK, latency and tokens. Supports `--provider`.
 **Tests:** in mock mode, every agent's fixture validates against its model; the retry
 logic works correctly against a fake client that fails validation once then succeeds.
 
-Commit: `Phase 2: LLM client (gemini/ollama/mock) with structured output and retries`
+Commit: `Phase 2: LLM client (gemini/mock) with structured output and retries`
 
 ### Phase 3 · Agents 1 and 2 (0:55 to 1:10)
 
@@ -702,8 +689,8 @@ Do a full real run on T01, then open `briefing.md` together. From here on: fixes
 ### Phase 7 · Baseline, metrics and test runner (1:50 to 2:05)
 
 > **Amended 2026-10-13:** `run_pipeline.py` and `run_tests.py` accept `--provider`
-> (`gemini | ollama | mock`). The results table reports cost as "€0 (free tier /
-> local)" and shows `cost_eur_if_paid_est` only when `paid_price_per_mtok_eur` is set.
+> (`gemini | mock`). The results table reports cost as "€0 (free tier)" and shows
+> `cost_eur_if_paid_est` only when `paid_price_per_mtok_eur` is set.
 
 - **`baseline.py`:** a single call with `prompts/baseline/vN.md` and the `baseline` model, output schema 5.10. Logs latency and cost the same way.
 - **`metrics.py`** scores any run against `answer_key.json[test_id]`:
@@ -738,17 +725,16 @@ Commit: `Phase 7: baseline, metrics, test runner`
 ### Phase 8 · Streamlit app (2:05 to 2:20, can run in parallel with testing)
 
 > **Amended 2026-10-13:** the app must be deployable on Streamlit Community Cloud with
-> one click, with no Ollama available there and no guarantee of a Gemini key. See the
-> four additions below, folded into the tab list.
+> one click, with no guarantee of a Gemini key at any given moment (free-tier quota,
+> or no key configured at all). See the four additions below, folded into the tab list.
 
 `app.py`. Keep it clean and simple, using `st.tabs`:
 
 1. **Run:**
    - a sample-batch dropdown listing every file in `data/tests/` (default `T01`), so the
      reviewer doesn't need to upload anything; uploading a CSV is still allowed
-   - a provider toggle, built from a startup availability check: Gemini needs a key,
-     Ollama needs its host to answer within 1 second. Only working providers are shown
-     — on Streamlit Cloud, Ollama is therefore hidden automatically
+   - a startup availability check for Gemini (is a key configured?); if not, the Run
+     tab falls back to mock and says so
    - a "Run pipeline" button, disabled past `app.max_live_runs_per_session` live runs
      for this session
    - a live progress line per stage using `st.status`, showing the stage name, its time
@@ -797,8 +783,7 @@ Commit: `Phase 8: Streamlit review app`
   - **Try it online:** the app link, with a note that the first load can take a minute
     because the app sleeps
   - **Run locally with Gemini:** get a free key from Google AI Studio, put it in `.env`
-  - **Run fully offline:** install Ollama, `ollama pull qwen2.5:7b`, run with
-    `--provider ollama`
+  - **Run with no key at all:** `--provider mock`, or just the Streamlit app's Demo tab
   - **Deploy:** share.streamlit.io, main file `app.py`, Secrets containing
     `GEMINI_API_KEY` and `PROVIDER = "gemini"`
 - **Appendix zip:** `git archive -o juniper-briefing.zip HEAD`, plus `runs/final/`.
@@ -838,7 +823,7 @@ Commit: `Phase 8: Streamlit review app`
 ## 8. Definition of done (Person A)
 
 - [ ] `pytest -q` passes
-- [ ] `python run_pipeline.py data/batch_original.csv` works in mock mode, and in gemini or ollama mode when a key/host is available
+- [ ] `python run_pipeline.py data/batch_original.csv` works in mock mode, and in gemini mode when a key is available
 - [ ] `python run_tests.py` produces `results.md` for 12 or more tests, prototype vs baseline, with latency and cost
 - [ ] the T01 gate is PASS or WARN, and every WARN is explained
 - [ ] the Streamlit app runs: sample-batch dropdown or upload, run, briefing, evidence, trace, review, metrics, demo tab
