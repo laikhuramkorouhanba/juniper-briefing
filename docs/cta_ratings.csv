@@ -1,0 +1,27 @@
+test_id,system,prompt_version,shop,theme,action_text,specific,addresses,proportionate,measurable,total,likely,note
+T01,prototype,v1,Central,waiting_time,,,,,,,PENDING,to rate from prototype run output
+T01,prototype,v1,Central,cleanliness,,,,,,,PENDING,to rate from prototype run output
+T01,prototype,v1,Central,product_availability,,,,,,,PENDING,to rate from prototype run output
+T01,prototype,v1,Station,price_accuracy,,,,,,,PENDING,to rate from prototype run output
+T01,prototype,v1,Station,waiting_time,,,,,,,PENDING,to rate from prototype run output
+T01,prototype,v1,Riverside,waiting_time,,,,,,,PENDING,to rate from prototype run output
+T01,prototype,v1,Riverside,checkout_receipt,,,,,,,PENDING,to rate from prototype run output
+T01,baseline,v1,Central,waiting_time,,,,,,,PENDING,to rate from baseline run output
+T01,baseline,v1,Central,cleanliness,,,,,,,PENDING,to rate from baseline run output
+T01,baseline,v1,Central,product_availability,,,,,,,PENDING,to rate from baseline run output
+T01,baseline,v1,Station,price_accuracy,,,,,,,PENDING,to rate from baseline run output
+T01,baseline,v1,Station,waiting_time,,,,,,,PENDING,to rate from baseline run output
+T01,baseline,v1,Riverside,waiting_time,,,,,,,PENDING,to rate from baseline run output
+T01,baseline,v1,Riverside,checkout_receipt,,,,,,,PENDING,to rate from baseline run output
+T07,prototype,v1,Airport,waiting_time,,,,,,,PENDING,to rate from prototype run output
+T07,baseline,v1,Airport,waiting_time,,,,,,,PENDING,to rate from baseline run output
+T09,prototype,v1,Central,waiting_time,,,,,,,PENDING,to rate from prototype run output
+T09,prototype,v1,Central,atmosphere_seating,,,,,,,PENDING,to rate from prototype run output
+T09,baseline,v1,Central,waiting_time,,,,,,,PENDING,to rate from baseline run output
+T09,baseline,v1,Central,atmosphere_seating,,,,,,,PENDING,to rate from baseline run output
+T11,prototype,v1,Central,cleanliness,,,,,,,PENDING,to rate from prototype run output
+T11,prototype,v1,Riverside,product_availability,,,,,,,PENDING,to rate from prototype run output
+T11,prototype,v1,Station,waiting_time,,,,,,,PENDING,to rate from prototype run output
+T11,baseline,v1,Central,cleanliness,,,,,,,PENDING,to rate from baseline run output
+T11,baseline,v1,Riverside,product_availability,,,,,,,PENDING,to rate from baseline run output
+T11,baseline,v1,Station,waiting_time,,,,,,,PENDING,to rate from baseline run output
