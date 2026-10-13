@@ -222,6 +222,12 @@ def run_pipeline(
         log = getattr(exc, "call_log", None)
         if log is not None:
             call_logs.append(log)
+    except FileNotFoundError as exc:
+        # provider: mock with no fixture for this test_id/agent — fixtures/mock/
+        # is scoped to "T01 at least" (CLAUDE.md), so this is expected for most
+        # tests beyond T01, not a crash-the-suite condition.
+        status = "FAIL"
+        error = str(exc)
     except ProviderUnavailable as exc:
         status = "PROVIDER_UNAVAILABLE"
         error = str(exc)
