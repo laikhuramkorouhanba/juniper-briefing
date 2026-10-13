@@ -437,7 +437,10 @@ def _evidence_table(result: RunResult, labels: dict[str, str]) -> pd.DataFrame:
         )
     for comment_id, reason in dup_reason.items():
         rows.append({"Branch": "", "Comment": "", "Topic": "", "Note": reason})
-    return pd.DataFrame(rows)
+    # pd.DataFrame([]) has no columns at all, not even empty ones — guarantee
+    # the expected columns so callers can always safely do df["Branch"] etc.,
+    # even for a batch with no clean comments and no duplicates (e.g. T02).
+    return pd.DataFrame(rows, columns=["Branch", "Comment", "Topic", "Note"])
 
 
 # ---------------------------------------------------------------------------
