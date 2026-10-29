@@ -1,4 +1,6 @@
-Juniper Café Feedback Briefing
+# Juniper Café Feedback Briefing
+
+Live app: https://juniper-briefing.streamlit.app
 
 Juniper Café is a small café with three shops. Every week, its manager has to read through lots of customer comments and work out what really needs fixing. It's easy to focus on the one angry message and miss the smaller problems that keep coming up.
 
@@ -24,9 +26,6 @@ CSV ──► Clean up (code): remove duplicate visits, check the data, count vi
 - **Goal:** better decisions first, less prep time second
 - **Form:** a Streamlit app
 - **Model:** Google Gemini Flash (free tier)
-
-More detail: [design rationale](docs/rationale.md), [stage contracts](docs/contracts.md),
-[decisions log](docs/decisions.md) and [iteration log](docs/iterations.md).
 
 ## Testing
 

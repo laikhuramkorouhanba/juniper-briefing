@@ -5,3 +5,5 @@ __pycache__/
 runs/*
 !runs/final/
 .streamlit/secrets.toml
+CLAUDE.md
+docs/
